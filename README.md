@@ -1,2 +1,9 @@
 # HebrewCopula
 Contains Python and R scripts with analyses of the copula in Biblical Hebrew
+
+copula_data_perpare_bib.ipynb is a script for preprocessing the biblical data. It uses the Python library [Text-
+Fabric](https://github.com/Dans-labs/text-fabric/wiki). It extracts data from the ETCBC database, version BHSA c.
+
+copula_data_prepare_xbib.ipynb preprocesses the extrabiblical data. It needs the extrabiblical dataset. This contains presently the Dead Sea Scrolls 1QM and 1QS and some Hebrew inscriptions.
+
+
