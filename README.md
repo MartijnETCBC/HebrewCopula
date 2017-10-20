@@ -6,4 +6,6 @@ Fabric](https://github.com/Dans-labs/text-fabric/wiki). It extracts data from th
 
 copula_data_prepare_xbib.ipynb preprocesses the extrabiblical data. It needs the extrabiblical dataset. This contains presently the Dead Sea Scrolls 1QM and 1QS and some Hebrew inscriptions.
 
+The two files are nearly identical, but there are slight differences in the data format of the biblical and extrabiblical data, so I have decided to keep the scripts separated.
+
 
