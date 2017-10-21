@@ -8,4 +8,6 @@ copula_data_prepare_xbib.ipynb preprocesses the extrabiblical data. It needs the
 
 The two files are nearly identical, but there are slight differences in the data format of the biblical and extrabiblical data, so I have decided to keep the scripts separated.
 
+The files hyh_nom_biblical.csv and hyh_nom_extrabiblical.csv are the output produced by the Python scripts.
+
 The file copula_analysis_R.txt imports the output of the two Python files into R. There some further preprocessing is done, after which the resulting dataset is analyzed.
