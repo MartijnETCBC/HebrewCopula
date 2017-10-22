@@ -1,0 +1,339 @@
+# 1. Import the relevant packages, the datasets and do some preprocessing
+
+library(mgcv)
+library(itsadug)
+library(rms)
+library(lattice)
+setwd("C:/Users/Martijn/Documents/SynVar/Proefschrift/HJH_NOM_scripts")
+
+################################################################
+
+#import extrabiblical
+
+dat.ex.bib <- read.csv('hyh_nom_extrabiblical.csv')
+dat.ex.bib <- dat.ex.bib[dat.ex.bib$language == 'Hebrew',]
+dat.ex.bib$subcorp <- ifelse(dat.ex.bib$book2 %in% c('1QM', '1QS'), 'Qumran Hebrew', 'Epigraphic Hebrew')
+
+###########################################################################
+#import biblical texts
+
+dat <- read.csv('hyh_nom_biblical.csv')
+dat <- dat[dat$language == 'hbo', ]
+dat$subcorp <- "Biblical Hebrew"
+
+dat.t <- rbind(dat, dat.ex.bib)
+
+dat.t$book.ch <- paste(dat.t$book, dat.t$chapter, sep = '_')
+
+dat.t$genre <- as.character(dat.t$genre)
+dat.t$genre[dat.t$book.ch == 'Genesis_49' & as.numeric(dat.t$verse) > 1 & as.numeric(dat.t$verse) < 28] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Exodus_15' & as.numeric(dat.t$verse) > 1 & as.numeric(dat.t$verse) < 19] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Numbers_6' & as.numeric(dat.t$verse) > 23 & as.numeric(dat.t$verse) < 27] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Numbers_21' & as.numeric(dat.t$verse) > 27 & as.numeric(dat.t$verse) < 31] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Numbers_23' & as.numeric(dat.t$verse) > 7 & as.numeric(dat.t$verse) < 11] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Numbers_23' & as.numeric(dat.t$verse) > 18 & as.numeric(dat.t$verse) < 25] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Numbers_24' & as.numeric(dat.t$verse) > 3 & as.numeric(dat.t$verse) < 10] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Numbers_24' & as.numeric(dat.t$verse) > 15 & as.numeric(dat.t$verse) < 25] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Deuteronomy_32' & as.numeric(dat.t$verse) < 44] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Deuteronomy_33' & as.numeric(dat.t$verse) > 2] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Judges_5' & as.numeric(dat.t$verse) > 1 & as.numeric(dat.t$verse) < 31] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Judges_9' & as.numeric(dat.t$verse) > 7 & as.numeric(dat.t$verse) < 16] <- 'poetry'
+dat.t$genre[dat.t$book.ch == '1_Samuel_2' & as.numeric(dat.t$verse) < 11] <- 'poetry'
+dat.t$genre[dat.t$book.ch == '2_Samuel_22' & as.numeric(dat.t$verse) > 2] <- 'poetry'
+dat.t$genre[dat.t$book.ch == '2_Samuel_23' & as.numeric(dat.t$verse) > 2 & as.numeric(dat.t$verse) < 8] <- 'poetry'
+dat.t$genre[dat.t$book.ch == '2_Samuel_1' & as.numeric(dat.t$verse) > 18 & as.numeric(dat.t$verse) < 28] <- 'poetry'
+
+dat.t$genre[dat.t$book.ch == 'Jonah_2' & as.numeric(dat.t$verse) > 3 & as.numeric(dat.t$verse) < 11] <- 'poetry'
+
+dat.t$genre[dat.t$book.ch == 'Daniel_2' & as.numeric(dat.t$verse) > 19 & as.numeric(dat.t$verse) < 24] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Daniel_8' & as.numeric(dat.t$verse) > 22 & as.numeric(dat.t$verse) < 27] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Daniel_12' & as.numeric(dat.t$verse) < 4] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Nehemiah_9' & as.numeric(dat.t$verse) > 5 & as.numeric(dat.t$verse) < 38] <- 'poetry'
+dat.t$genre[dat.t$book.ch == '1_Chronicles_16' & as.numeric(dat.t$verse) > 7 & as.numeric(dat.t$verse) < 37] <- 'poetry'
+dat.t$genre[dat.t$book.ch == 'Job_1' & as.numeric(dat.t$verse) < 21] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Job_2' & as.numeric(dat.t$verse) < 14] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Job_42' & as.numeric(dat.t$verse) > 6 & as.numeric(dat.t$verse) < 18] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Isaiah_36' & as.numeric(dat.t$verse) < 23] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Isaiah_37' & as.numeric(dat.t$verse) < 22] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Isaiah_38' & as.numeric(dat.t$verse) < 10] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Isaiah_38' & as.numeric(dat.t$verse) > 20] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Isaiah_39'] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Jeremiah_52'] <- 'prose'
+dat.t$genre[dat.t$book.ch == 'Jeremiah_39' | dat.t$book.ch == 'Jeremiah_40'] <- 'prose'
+
+dat.t$genre[dat.t$book == 'Daniel' &  as.numeric(dat.t$chapter) > 6  & as.numeric(dat.t$chapter) < 13 ] <- 'prophecy' 
+
+dat.t$genre <- as.factor(dat.t$genre)
+
+dat.t <- dat.t[dat.t$language %in% c('hbo', 'Hebrew'), ]
+dat.t$verse <- as.numeric(as.character(dat.t$verse))
+dat.t <- dat.t[dat.t$pc_type != 'VP',]
+#make prose basic level
+dat.t$genre <- relevel(dat.t$genre, ref = 'prose')
+dat.t$main_sub <- relevel(dat.t$main_sub, ref = 'Main')
+dat.t$txt_type <- relevel(dat.t$txt_type, ref = 'N')
+dat.t$mother <- relevel(dat.t$mother, ref = 'nominal')
+
+dat.t$genre <- as.factor(dat.t$genre)
+dat.t$main_sub <- as.factor(dat.t$main_sub)
+dat.t$subj_type_det <- paste(dat.t$subj_type, dat.t$subj_det, sep = '.')
+dat.t$pc_type_det <- paste(dat.t$pc_type, dat.t$pc_det, sep = '.')
+dat.t$subj_type_det <- as.factor(dat.t$subj_type_det)
+dat.t$pc_type_det <- as.factor(dat.t$pc_type_det)
+
+
+dat.t$pc_type <- relevel(dat.t$pc_type, ref = 'NP')
+dat.t$subj_type <- relevel(dat.t$subj_type, ref = 'NP')
+
+dat.t$subj_type_det <- relevel(dat.t$subj_type_det, ref = 'NP.und')
+dat.t$pc_type_det <- relevel(dat.t$pc_type_det, ref = 'PP.det')
+dat.t$ebh_lbh <- relevel(dat.t$ebh_lbh, ref = 'ebh')
+dat.t$genre <- relevel(dat.t$genre, ref = 'prose')
+dat.t$nega <- relevel(dat.t$nega, ref = 'non_neg')
+dat.t$s_p_order <- relevel(dat.t$s_p_order, ref = 'SP')
+
+dat.t <- dat.t[order(dat.t$cl_id),]
+
+
+#remove resumptive and subj is PPrP (three membered)
+dat.t <- dat.t[ which(dat.t$clause_rela != 'Resu_' | dat.t$subj_type != 'PPrP'),]
+
+#remove EPPr (threemembered)
+dat.t <- dat.t[dat.t$EPPr != 1,]
+dat.t <- dat.t[dat.t$Objc != 1,]
+dat.t <- dat.t[dat.t$Exst != 1,]
+dat.t <- droplevels(dat.t)
+
+############################################################
+# id preparation
+
+minims <- tapply(dat.t$cl_id, dat.t$book2, function(x) min(x) -1)
+minims <- as.data.frame(minims)
+
+id.vec <- numeric(0)
+n <- 1
+
+for (bo in dat.t$book2){
+    id.vec[n] <- minims[bo,]
+    n <- n + 1
+}
+
+dat.t$id.vec <- id.vec
+dat.t$cl_id2 <- dat.t$cl_id - dat.t$id.vec
+
+#############################################################################
+
+str(dat.t)
+
+############################################################################
+
+dat.t <- droplevels(dat.t)
+
+##################################################################################
+
+dat.t$Modi <- as.factor(dat.t$Modi)
+dat.t$Time <- as.factor(dat.t$Time)
+dat.t$Intj <- as.factor(dat.t$Intj)
+dat.t$Adju <- as.factor(dat.t$Adju)
+dat.t$Cmpl <- as.factor(dat.t$Cmpl)
+dat.t$Loca <- as.factor(dat.t$Loca)
+dat.t$Ques <- as.factor(dat.t$Ques)
+dat.t$Rela <- as.factor(dat.t$Rela)
+dat.t$Conj <- as.factor(dat.t$Conj)
+
+###########################################################################
+
+dat.t$cl_len2 <- dat.t$cl_len - mean(dat.t$cl_len)
+dat.t$subj_len <- dat.t$subj_len - mean(dat.t$subj_len)
+dat.t$pc_len <- dat.t$pc_len - mean(dat.t$pc_len)
+
+###########################################################################
+
+dat.t <- dat.t[dat.t$subcorp != 'Epigraphic Hebrew',]
+
+############################################################################
+#before model 8
+levels(dat.t$pc_type_det) <- c("PP.det", "AdjP.no_det", "AdvP.no_det", "DPrP.det", "InrP", "InrP", "NP.det", "NP.und", "PP.no_det", "PP.und", "NP.det", "PrNP.det")
+
+#########################################################################
+
+#before model 10
+levels(dat.t$subj_type_det) <- c("NP.und", "DPrP.det", "IPrP.und", "NP.det", "PP.det", "PP.und", "PPrP.det", "PrNP.det")
+
+dat.t$subj_type_det <- relevel(dat.t$subj_type_det, ref = 'NP.det')
+###########################################################################
+
+# 2. do exploration
+#explorative plots 
+
+# Main_sub
+dat.t.ms <- dat.t[dat.t$main_sub != 'Undc',]
+dat.t.ms <- droplevels(dat.t.ms)
+mosaicplot(table(dat.t.ms$main_sub, dat.t.ms$cl_type))
+mosaicplot(table(dat.t.ms$main_sub, dat.t.ms$cl_type), main = 'Clause type/main and subordinate clauses')
+
+mosaicplot(table(dat.t$ebh_lbh, dat.t$cl_type), main = 'Mosaicplot of clause type and language phase', las = 2)
+
+mosaicplot(table(dat.t$txt_type, dat.t$cl_type), main = 'Mosaicplot of clause type and main and discourse')
+
+mosaicplot(table(dat.t$genre, dat.t$cl_type), main = 'Mosaicplot of clause type and main and genre')
+
+#before subtracting the mean.
+spineplot(table(dat.t$cl_len, dat.t$cl_type), main = 'Association of clause type and number of phrases in a clause')
+
+
+# how do different levels of subject collocate with different levels of predicate complement
+mosaicplot(table(dat.t$subj_type_det, dat.t$pc_type_det), las = 1, xlab = 'subject', ylab = 'predicate complement')
+
+#subject type vs s-p-order
+table(dat.t$subj_type, dat.t$s_p_order)
+
+
+#########################################################################
+
+#3. Build a model of variation between HJH and nom
+#we start with complete model
+
+bam.fit <- bam(cl_type ~ mother + s_p_order + main_sub + genre + txt_type + ebh_lbh + Conj + Loca + Cmpl + Adju + Intj + Time + Modi + Ques + Rela+ nega + subj_type_det + pc_type_det + cl_len2 + s(subj_len) + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit)
+
+##################################################################################
+
+#new model without nega
+
+bam.fit2 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + txt_type + ebh_lbh + Conj + Loca + Cmpl + Adju + Intj + Time + Modi + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(subj_len) + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit2)
+
+AIC(bam.fit, bam.fit2)
+##################################################################################
+
+#new model without Loca
+
+bam.fit3 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + txt_type + ebh_lbh + Conj + Cmpl + Adju + Intj + Time + Modi + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(subj_len) + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit3)
+
+AIC(bam.fit2, bam.fit3)
+##################################################################################
+
+#new model without Modi
+
+bam.fit4 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + txt_type + ebh_lbh + Conj + Cmpl + Adju + Intj + Time + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(subj_len) + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit4)
+
+AIC(bam.fit3, bam.fit4)
+
+##################################################################################
+
+#new model without Adju
+
+bam.fit5 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + txt_type + ebh_lbh + Conj + Cmpl + Intj + Time + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(subj_len) + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit5)
+
+AIC(bam.fit4, bam.fit5)
+
+##################################################################################
+
+#new model without txt_type
+
+bam.fit6 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + ebh_lbh + Conj + Cmpl + Intj + Time + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(subj_len) + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit6)
+
+AIC(bam.fit5, bam.fit6)
+
+##################################################################################
+#new model without subj_len
+
+bam.fit7 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + ebh_lbh + Conj + Cmpl + Intj + Time + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit7)
+
+AIC(bam.fit6, bam.fit7)
+
+##################################################################################
+
+#finally some levels in pc_type_det with very high standard errors are merged. These are:
+# InrP.no_det merges with IPrP.und to InrP
+# PPrP.det merges with NP.det to NP.det
+
+levels(dat.t$pc_type_det) <- c("PP.det", "AdjP.no_det", "AdvP.no_det", "DPrP.det", "InrP", "InrP", "NP.det", "NP.und", "PP.no_det", "PP.und", "NP.det", "PrNP.det")
+
+bam.fit8 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + ebh_lbh + Conj + Cmpl + Intj + Time + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+summary(bam.fit8)
+
+AIC(bam.fit7, bam.fit8)
+
+###################################################################################
+
+#remove Cmpl. It is not so clear that this a well defined phrase function in verbless clauses and HJH #clauses
+
+bam.fit9 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + ebh_lbh + Conj + Intj + Time + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+
+###############################################################################
+
+rms::vif(bam.fit9)
+####################################################################################
+# problem: vif shows collinearity in ebh_lbh: remove this variable
+
+bam.fit10 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + Conj + Intj + Time + Ques + Rela + subj_type_det + pc_type_det + cl_len2 + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+################################################################################
+
+bam.fit11 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + Conj + Intj + Time + Ques + subj_type_det + pc_type_det + cl_len2 + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+################################################################################
+
+#try: interaction between ebh_lbh and main_sub: 
+bam.fit12 <- bam(cl_type ~ mother + s_p_order + main_sub*ebh_lbh + genre + Conj + Intj + Time + Ques + subj_type + pc_type_det + cl_len2 + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+
+#################################################################################
+# high vif for subj_type_det, go back to subj_type 
+
+bam.fit13 <- bam(cl_type ~ mother + s_p_order + main_sub + genre + Conj + Intj + Time + Ques + subj_type + pc_type_det + cl_len2 + s(pc_len) + s(cl_id2, book2, bs = 'fs', m=1), data = dat.t, family = 'binomial')
+################################################################################
+# plot main_sub
+
+plot_parametric(bam.fit13, pred=list(main_sub = levels(dat.t$main_sub)), cond = list(subj_type = 'NP', cl_len2 = 0, pc_len = 0), col = 'red',rm.ranef=T, main = 'Figure 11. Main and subordinate clauses')
+
+# genre
+
+plot_parametric(bam.fit13, pred=list(genre = levels(dat.t$genre)), cond = list(subj_type = 'NP', cl_len2 = 0, pc_len = 0), col = 'red',rm.ranef=T, main = 'Figure 12. Genre')
+###################################################################################
+par(mfrow=c(1, 2))
+
+#make plots of Intj and Ques
+plot_parametric(bam.fit13, pred=list(Ques = levels(dat.t$Ques)), cond = list(cl_len = 0, pc_len = 0), col = 'red',rm.ranef=T)
+plot_parametric(bam.fit13, pred=list(Intj = levels(dat.t$Intj)), cond = list(cl_len = 0, pc_len = 0), col = 'red',rm.ranef=T)
+
+#############################################################################
+par(mfrow=c(1, 2))
+
+plot_parametric(bam.fit13, pred=list(Conj = levels(dat.t$Conj)), cond = list(subj_type_det = 'NP.und', cl_len2 = 0, pc_len = 0), col = 'red',rm.ranef=T)
+plot_parametric(bam.fit13, pred=list(Time = levels(dat.t$Time)), cond = list(subj_type_det = 'NP.und', cl_len2 = 0, pc_len = 0), col = 'red',rm.ranef=T)
+
+#
+plot_parametric(bam.fit13, pred=list(s_p_order = levels(dat.t$s_p_order)), cond = list(subj_type_det = 'NP.und', cl_len = 0, pc_len = 0), col = 'red',rm.ranef=T)
+
+
+#########################################################################################
+#visualizations of the model with visreg
+
+library(visreg)
+visreg(bam.fit13)
+
+######################################################################################
+
+#some analyses of txt_type in relation to phrase functions
+
+mosaicplot(table(dat.t$txt_type, dat.t$Intj))
+mosaicplot(table(dat.t$txt_type, dat.t$Ques))
+mosaicplot(table(dat.t$txt_type, dat.t$Rela))
+mosaicplot(table(dat.t$txt_type, dat.t$Conj))
+mosaicplot(table(dat.t$txt_type, dat.t$Time))
+
+############################################################################
+
+#random effect in book
+
+pp <- get_modelterm(bam.fit13, select=2, as.data.frame=TRUE)
+
+lattice::xyplot(fit~cl_id2|book2, data = pp, type = 'l')
+
+
+
